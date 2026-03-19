@@ -1,0 +1,186 @@
+<Window x:Class="CompanionRobot.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:behaviors="clr-namespace:CompanionRobot.App.Behaviors"
+        mc:Ignorable="d"
+        Title="CompanionRobot"
+        Height="760"
+        Width="1200"
+        MinHeight="640"
+        MinWidth="980"
+        Background="#0F172A">
+    <Grid Margin="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*" />
+            <ColumnDefinition Width="16" />
+            <ColumnDefinition Width="1.6*" />
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="12" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="12" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Border Style="{StaticResource CardBorderStyle}">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Left">
+                        <TextBlock Text="CompanionRobot" Style="{StaticResource HeaderTextStyle}" />
+                        <TextBlock Text="Offline-first robot brain shell" Style="{StaticResource SubtleTextStyle}" />
+                    </StackPanel>
+                    <StackPanel DockPanel.Dock="Right" HorizontalAlignment="Right">
+                        <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource StatusTextStyle}" HorizontalAlignment="Right" />
+                        <TextBlock Text="{Binding ProviderSummary}" Style="{StaticResource SubtleTextStyle}" HorizontalAlignment="Right" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="Conversation" Style="{StaticResource SectionTitleTextStyle}" Margin="0,0,0,12" />
+                    <ListBox ItemsSource="{Binding Messages}"
+                             BorderThickness="0"
+                             Background="Transparent"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             behaviors:ListBoxAutoScrollBehavior.AutoScrollToEnd="True">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border x:Name="MessageBubble"
+                                        Margin="0,0,0,10"
+                                        Padding="12"
+                                        CornerRadius="12"
+                                        HorizontalAlignment="Left"
+                                        MaxWidth="680"
+                                        Background="#1E293B">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Role}" FontWeight="Bold" Foreground="#E2E8F0" />
+                                        <TextBlock Text="{Binding Content}" TextWrapping="Wrap" Margin="0,6,0,0" Foreground="#F8FAFC" />
+                                        <TextBlock Text="{Binding Timestamp, StringFormat='{}{0:HH:mm:ss}'}"
+                                                   Margin="0,8,0,0"
+                                                   FontSize="11"
+                                                   Foreground="#CBD5E1" />
+                                    </StackPanel>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding Role}" Value="User">
+                                        <Setter TargetName="MessageBubble" Property="HorizontalAlignment" Value="Right" />
+                                        <Setter TargetName="MessageBubble" Property="Background" Value="#2563EB" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Role}" Value="Assistant">
+                                        <Setter TargetName="MessageBubble" Property="HorizontalAlignment" Value="Left" />
+                                        <Setter TargetName="MessageBubble" Property="Background" Value="#1E293B" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Role}" Value="System">
+                                        <Setter TargetName="MessageBubble" Property="HorizontalAlignment" Value="Center" />
+                                        <Setter TargetName="MessageBubble" Property="Background" Value="#475569" />
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <Border Grid.Row="4" Style="{StaticResource CardBorderStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="12" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Compose" Style="{StaticResource SectionTitleTextStyle}" />
+
+                    <TextBox Grid.Row="1"
+                             Margin="0,8,0,0"
+                             Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
+                             Height="76"
+                             VerticalContentAlignment="Center"
+                             Padding="12"
+                             FontSize="16"
+                             Background="#0F172A"
+                             Foreground="#F8FAFC"
+                             BorderBrush="#334155"
+                             BorderThickness="1"
+                             AcceptsReturn="False">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding SendCommand}" />
+                        </TextBox.InputBindings>
+                    </TextBox>
+
+                    <DockPanel Grid.Row="3">
+                        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                            <Button Content="Send" Command="{Binding SendCommand}" Style="{StaticResource PrimaryButtonStyle}" />
+                            <Button Content="Clear" Command="{Binding ClearConversationCommand}" Style="{StaticResource SecondaryButtonStyle}" />
+                        </StackPanel>
+                        <TextBlock DockPanel.Dock="Right"
+                                   Text="{Binding BusySummary}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right"
+                                   Style="{StaticResource SubtleTextStyle}" />
+                    </DockPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Column="2">
+            <Border Style="{StaticResource CardBorderStyle}">
+                <StackPanel>
+                    <TextBlock Text="Speech Input" Style="{StaticResource SectionTitleTextStyle}" />
+                    <TextBlock Text="{Binding ListeningSummary}" Style="{StaticResource SubtleTextStyle}" Margin="0,4,0,0" />
+                    <WrapPanel Margin="0,12,0,0">
+                        <Button Content="Start Listening" Command="{Binding StartListeningCommand}" Style="{StaticResource PrimaryButtonStyle}" />
+                        <Button Content="Stop Listening" Command="{Binding StopListeningCommand}" Style="{StaticResource SecondaryButtonStyle}" />
+                    </WrapPanel>
+                    <TextBlock Text="Transcript Preview" Style="{StaticResource MiniHeaderTextStyle}" Margin="0,16,0,6" />
+                    <Border Background="#0F172A" BorderBrush="#334155" BorderThickness="1" CornerRadius="10" Padding="12">
+                        <TextBlock Text="{Binding TranscriptPreview}" TextWrapping="Wrap" MinHeight="64" Foreground="#F8FAFC" />
+                    </Border>
+                    <TextBlock Text="If auto-send is disabled, the final transcript is copied to the input box." Style="{StaticResource SubtleTextStyle}" Margin="0,8,0,0" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorderStyle}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="System Status" Style="{StaticResource SectionTitleTextStyle}" />
+                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource ValueTextStyle}" Margin="0,8,0,0" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding WarningMessage}" Style="{StaticResource WarningTextStyle}" Margin="0,8,0,0" TextWrapping="Wrap" />
+                    <TextBlock Text="{Binding ErrorMessage}" Style="{StaticResource ErrorTextStyle}" Margin="0,8,0,0" TextWrapping="Wrap" />
+                    <Separator Margin="0,12,0,12" Background="#334155" />
+                    <TextBlock Text="AI Provider" Style="{StaticResource MiniHeaderTextStyle}" />
+                    <TextBlock Text="{Binding AIProviderName}" Style="{StaticResource ValueTextStyle}" />
+                    <TextBlock Text="Speech Provider" Style="{StaticResource MiniHeaderTextStyle}" Margin="0,8,0,0" />
+                    <TextBlock Text="{Binding SpeechProviderName}" Style="{StaticResource ValueTextStyle}" />
+                    <TextBlock Text="Hardware Enabled" Style="{StaticResource MiniHeaderTextStyle}" Margin="0,8,0,0" />
+                    <TextBlock Text="{Binding HardwareEnabledSummary}" Style="{StaticResource ValueTextStyle}" />
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorderStyle}" Margin="0,12,0,0">
+                <StackPanel>
+                    <TextBlock Text="Mock Hardware Debug" Style="{StaticResource SectionTitleTextStyle}" />
+                    <WrapPanel Margin="0,10,0,0">
+                        <Button Content="Wave" Command="{Binding WaveCommand}" Style="{StaticResource PrimaryButtonStyle}" />
+                        <Button Content="Drive Forward" Command="{Binding DriveForwardCommand}" Style="{StaticResource SecondaryButtonStyle}" />
+                        <Button Content="Read Sensors" Command="{Binding ReadSensorsCommand}" Style="{StaticResource SecondaryButtonStyle}" />
+                    </WrapPanel>
+                    <TextBlock Text="Display Message" Style="{StaticResource MiniHeaderTextStyle}" Margin="0,16,0,6" />
+                    <TextBox Text="{Binding HardwareDisplayText, UpdateSourceTrigger=PropertyChanged}"
+                             Padding="10"
+                             Background="#0F172A"
+                             Foreground="#F8FAFC"
+                             BorderBrush="#334155"
+                             BorderThickness="1" />
+                    <Button Content="Send To Display" Command="{Binding DisplayStatusCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,10,0,0" />
+                    <TextBlock Text="{Binding HardwareStatus}" Style="{StaticResource SubtleTextStyle}" Margin="0,12,0,0" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Grid>
+</Window>
