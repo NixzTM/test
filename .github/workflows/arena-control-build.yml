@@ -1,0 +1,45 @@
+name: Build ArenaControl APK
+
+on:
+  push:
+    branches: [arena-control-build]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Decode source
+        run: |
+          base64 -d ArenaControl-source.zip.b64 > ArenaControl-source.zip
+          rm -rf buildsrc
+          mkdir buildsrc
+          unzip -q ArenaControl-source.zip -d buildsrc
+      - name: Build debug APK
+        working-directory: buildsrc/ArenaControl
+        run: gradle --no-daemon clean assembleDebug
+      - name: Verify APK
+        run: |
+          test -f buildsrc/ArenaControl/app/build/outputs/apk/debug/app-debug.apk
+          sha256sum buildsrc/ArenaControl/app/build/outputs/apk/debug/app-debug.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ArenaControl-debug-apk
+          path: buildsrc/ArenaControl/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
