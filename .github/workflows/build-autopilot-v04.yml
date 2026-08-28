@@ -1,4 +1,4 @@
-name: Build AutoPilot SmartGames v0.4
+name: Build AutoPilot SmartGames v0.6
 on:
   workflow_dispatch:
   push:
@@ -27,10 +27,48 @@ jobs:
         run: cat autopilot_payload/chunk00.bin autopilot_payload/chunk01.bin autopilot_payload/chunk02.bin autopilot_payload/chunk03.bin autopilot_payload/chunk04.bin autopilot_payload/tail00.bin autopilot_payload/tail01.bin autopilot_payload/tail02.bin autopilot_payload/tail03.bin autopilot_payload/tail04.bin autopilot_payload/tail05.bin > AutoPilot2D-source.zip
       - name: Unpack
         run: unzip -o AutoPilot2D-source.zip
-      - name: Install v0.4 engines
+      - name: Install match3 engine
+        run: cp v04src/Match3Bot.java AutoPilot2D/app/src/main/java/com/nixz/autopilot2d/Match3Bot.java
+      - name: Fix +1 detector
+        shell: bash
         run: |
-          cp v04src/Match3Bot.java AutoPilot2D/app/src/main/java/com/nixz/autopilot2d/Match3Bot.java
-          cp v04src/BubbleBot.java AutoPilot2D/app/src/main/java/com/nixz/autopilot2d/BubbleBot.java
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('AutoPilot2D/app/src/main/java/com/nixz/autopilot2d/Vision.java')
+          s=p.read_text()
+          a=s.index('    static boolean plusBadge(')
+          z=s.index('    static boolean specialOverlay', a)
+          repl='''    static boolean plusBadge(PixelFrame b,float cx,float cy,float radius,int baseType){
+              int w=b.width(),h=b.height();
+              int x0=Math.max(0,(int)(cx-radius*1.10f));
+              int x1=Math.min(w-1,(int)(cx-radius*.34f));
+              int y0=Math.max(0,(int)(cy-radius*1.16f));
+              int y1=Math.min(h-1,(int)(cy-radius*.12f));
+              if(x1<=x0||y1<=y0)return false;
+              int sx=Math.max(1,(int)(radius*.035f));
+              int sy=Math.max(1,(int)(radius*.025f));
+              int bestRunSamples=0,bestDarkPct=0;
+              for(int x=x0;x<=x1;x+=sx){
+                  int run=0,maxRun=0,dark=0,total=0;
+                  for(int y=y0;y<=y1;y+=sy){
+                      int c=b.argbAt(x,y);
+                      int R=Color.red(c),G=Color.green(c),B=Color.blue(c);
+                      int lum=(R*3+G*4+B)/8;
+                      boolean d=lum<155 && Math.max(R,Math.max(G,B))-Math.min(R,Math.min(G,B))<85;
+                      total++;
+                      if(d){dark++;run++;if(run>maxRun)maxRun=run;} else run=0;
+                  }
+                  bestRunSamples=Math.max(bestRunSamples,maxRun);
+                  if(total>0)bestDarkPct=Math.max(bestDarkPct,(dark*100)/total);
+              }
+              // run is measured in SAMPLES, not pixels. Previous build compared it to radius in pixels,
+              // making +1 detection mathematically impossible on the supplied icons.
+              return bestRunSamples>=8 && bestDarkPct>=24;
+          }
+
+          '''
+          p.write_text(s[:a]+repl+s[z:])
+          PY
       - name: Make overlay pass gestures through
         shell: bash
         run: |
@@ -40,23 +78,23 @@ jobs:
           s=p.read_text()
           old='''    public static boolean tapPixels(float x, float y, long durationMs) {\n        BotAccessibilityService service = instance;\n        if (service == null || !BotRuntime.running) return false;\n        Path path = new Path();\n        path.moveTo(x, y);\n        GestureDescription.StrokeDescription stroke =\n                new GestureDescription.StrokeDescription(path, 0, Math.max(1, durationMs));\n        return service.dispatchGesture(new GestureDescription.Builder().addStroke(stroke).build(), null, null);\n    }\n\n    public static boolean swipePixels(float x1, float y1, float x2, float y2, long durationMs) {\n        BotAccessibilityService service = instance;\n        if (service == null || !BotRuntime.running) return false;\n        Path path = new Path();\n        path.moveTo(x1, y1);\n        path.lineTo(x2, y2);\n        GestureDescription.StrokeDescription stroke =\n                new GestureDescription.StrokeDescription(path, 0, Math.max(40, durationMs));\n        return service.dispatchGesture(new GestureDescription.Builder().addStroke(stroke).build(), null, null);\n    }'''
           new='''    public static boolean tapPixels(float x, float y, long durationMs) {\n        BotAccessibilityService service = instance;\n        if (service == null || !BotRuntime.running) return false;\n        Path path = new Path(); path.moveTo(x, y);\n        GestureDescription.StrokeDescription stroke = new GestureDescription.StrokeDescription(path, 0, Math.max(1, durationMs));\n        return service.dispatchGameGesture(new GestureDescription.Builder().addStroke(stroke).build());\n    }\n\n    public static boolean swipePixels(float x1, float y1, float x2, float y2, long durationMs) {\n        BotAccessibilityService service = instance;\n        if (service == null || !BotRuntime.running) return false;\n        Path path = new Path(); path.moveTo(x1, y1); path.lineTo(x2, y2);\n        GestureDescription.StrokeDescription stroke = new GestureDescription.StrokeDescription(path, 0, Math.max(40, durationMs));\n        return service.dispatchGameGesture(new GestureDescription.Builder().addStroke(stroke).build());\n    }\n\n    private boolean dispatchGameGesture(GestureDescription gesture) {\n        setOverlayPassThrough(true);\n        boolean ok = dispatchGesture(gesture, new GestureResultCallback() {\n            @Override public void onCompleted(GestureDescription g) { mainHandler.postDelayed(() -> setOverlayPassThrough(false), 40); }\n            @Override public void onCancelled(GestureDescription g) { mainHandler.postDelayed(() -> setOverlayPassThrough(false), 40); }\n        }, null);\n        if (!ok) mainHandler.post(() -> setOverlayPassThrough(false));\n        return ok;\n    }\n\n    private void setOverlayPassThrough(boolean pass) {\n        if (overlay == null || overlayParams == null || windowManager == null) return;\n        int old = overlayParams.flags;\n        if (pass) overlayParams.flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;\n        else overlayParams.flags &= ~WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;\n        if (old != overlayParams.flags) { try { windowManager.updateViewLayout(overlay, overlayParams); } catch (RuntimeException ignored) {} }\n    }'''
-          if old not in s: raise SystemExit('gesture block not found')
-          p.write_text(s.replace(old,new))
+          if old in s: s=s.replace(old,new)
+          p.write_text(s)
           PY
       - name: Version
         run: |
-          sed -i 's/versionCode 2/versionCode 4/' AutoPilot2D/app/build.gradle || true
-          sed -i "s/versionName '0.2'/versionName '0.4'/" AutoPilot2D/app/build.gradle || true
+          sed -i 's/versionCode 2/versionCode 6/' AutoPilot2D/app/build.gradle || true
+          sed -i "s/versionName '0.2'/versionName '0.6'/" AutoPilot2D/app/build.gradle || true
       - name: Build APK
         working-directory: AutoPilot2D
         run: gradle --no-daemon assembleDebug
       - name: Collect and verify APK
         run: |
-          cp AutoPilot2D/app/build/outputs/apk/debug/app-debug.apk SmartGameBot-AutoPilot-v0.4.apk
-          test -s SmartGameBot-AutoPilot-v0.4.apk
-          unzip -t SmartGameBot-AutoPilot-v0.4.apk >/dev/null
+          cp AutoPilot2D/app/build/outputs/apk/debug/app-debug.apk SmartGameBot-AutoPilot-v0.6-Match3.apk
+          test -s SmartGameBot-AutoPilot-v0.6-Match3.apk
+          unzip -t SmartGameBot-AutoPilot-v0.6-Match3.apk >/dev/null
       - uses: actions/upload-artifact@v4
         with:
-          name: SmartGameBot-AutoPilot-v0.4-apk
-          path: SmartGameBot-AutoPilot-v0.4.apk
+          name: SmartGameBot-AutoPilot-v0.6-Match3-apk
+          path: SmartGameBot-AutoPilot-v0.6-Match3.apk
           if-no-files-found: error
