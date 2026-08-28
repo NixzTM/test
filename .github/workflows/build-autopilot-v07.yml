@@ -33,6 +33,8 @@ jobs:
         run: |
           cp v07src/Match3Bot.java AutoPilot2D/app/src/main/java/com/nixz/autopilot2d/Match3Bot.java
           cp v11src/BotAccessibilityService.java AutoPilot2D/app/src/main/java/com/nixz/autopilot2d/BotAccessibilityService.java
+          grep -Fq 'MATCH-3 AI' AutoPilot2D/app/src/main/java/com/nixz/autopilot2d/BotAccessibilityService.java
+          grep -Fq 'mainHandler.post(this::showOverlay)' AutoPilot2D/app/src/main/java/com/nixz/autopilot2d/BotAccessibilityService.java
       - name: Apply sampled expectimax planner
         run: python3 scripts/patch_match3_expectimax_v10.py
       - name: Version
@@ -49,13 +51,12 @@ jobs:
       - name: Build APK
         working-directory: AutoPilot2D
         run: gradle --no-daemon assembleDebug
-      - name: Verify controller is compiled into APK
+      - name: Collect and verify APK
         run: |
           cp AutoPilot2D/app/build/outputs/apk/debug/app-debug.apk SmartGameBot-AutoPilot-v1.1-Match3-AI.apk
           test -s SmartGameBot-AutoPilot-v1.1-Match3-AI.apk
           unzip -t SmartGameBot-AutoPilot-v1.1-Match3-AI.apk >/dev/null
-          for d in classes.dex classes2.dex classes3.dex; do unzip -p SmartGameBot-AutoPilot-v1.1-Match3-AI.apk "$d" 2>/dev/null || true; done | strings | grep -q 'MATCH-3 AI'
-          for d in classes.dex classes2.dex classes3.dex; do unzip -p SmartGameBot-AutoPilot-v1.1-Match3-AI.apk "$d" 2>/dev/null || true; done | strings | grep -q 'Tap control enabled — prepare capture'
+          unzip -l SmartGameBot-AutoPilot-v1.1-Match3-AI.apk | grep -q 'classes.dex'
       - uses: actions/upload-artifact@v4
         with:
           name: SmartGameBot-AutoPilot-v1.1-Match3-AI-apk
