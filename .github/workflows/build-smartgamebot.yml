@@ -25,31 +25,47 @@ jobs:
         run: cat build_payload/part00.b64 build_payload/part01.b64 build_payload/part02.b64 build_payload/part03.b64 | base64 -d > SmartGameBot_source.zip
       - name: Unpack source
         run: unzip -o SmartGameBot_source.zip
-      - name: Apply Android 14-16 startup fixes
+      - name: Apply Samsung Android accessibility and startup fixes
         shell: bash
         run: |
           sed -i 's/Process\.THREAD_PRIORITY_DISPLAY/android.os.Process.THREAD_PRIORITY_DISPLAY/' SmartGameBot/app/src/main/java/com/nixz/smartgamebot/CaptureService.java
           sed -i 's/targetSdk 35/targetSdk 34/' SmartGameBot/app/build.gradle
-          sed -i 's/versionCode 3/versionCode 4/' SmartGameBot/app/build.gradle
-          sed -i "s/versionName '0.3-smart'/versionName '0.4-startupfix'/" SmartGameBot/app/build.gradle
+          sed -i 's/versionCode 3/versionCode 5/' SmartGameBot/app/build.gradle
+          sed -i "s/versionName '0.3-smart'/versionName '0.5-accessibilityfix'/" SmartGameBot/app/build.gradle
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('SmartGameBot/app/src/main/AndroidManifest.xml')
-          s=p.read_text()
+
+          manifest=Path('SmartGameBot/app/src/main/AndroidManifest.xml')
+          s=manifest.read_text()
           s=s.replace('@android:style/Theme.Material.Light.NoActionBar','@android:style/Theme.DeviceDefault.NoActionBar')
           s=s.replace('            android:screenOrientation="portrait">','>')
-          p.write_text(s)
-          p=Path('SmartGameBot/app/src/main/java/com/nixz/smartgamebot/MainActivity.java')
-          s=p.read_text()
-          old='''        projectionManager = (MediaProjectionManager)getSystemService(Context.MEDIA_PROJECTION_SERVICE);\n        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {\n            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 80);\n        }\n        buildUi();'''
-          new='''        projectionManager = (MediaProjectionManager)getSystemService(Context.MEDIA_PROJECTION_SERVICE);\n        try {\n            buildUi();\n        } catch (Throwable t) {\n            TextView emergency = new TextView(this);\n            emergency.setText("Smart Game Bot startup error:\\n" + t.getClass().getSimpleName() + ": " + String.valueOf(t.getMessage()));\n            emergency.setTextSize(18);\n            emergency.setPadding(32,64,32,32);\n            setContentView(emergency);\n        }'''
+          old='''        <service\n            android:name=".BotAccessibilityService"\n            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"\n            android:exported="false">'''
+          new='''        <service\n            android:name=".BotAccessibilityService"\n            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"\n            android:exported="true"\n            android:enabled="true">'''
           if old not in s:
-              raise SystemExit('MainActivity startup block not found')
-          p.write_text(s.replace(old,new))
+              raise SystemExit('Accessibility service declaration not found')
+          manifest.write_text(s.replace(old,new))
+
+          cfg=Path('SmartGameBot/app/src/main/res/xml/accessibility_service_config.xml')
+          c=cfg.read_text()
+          c=c.replace('android:accessibilityEventTypes="typeWindowStateChanged"','android:accessibilityEventTypes="typeAllMask"')
+          c=c.replace('android:notificationTimeout="100"','android:notificationTimeout="50"\n    android:accessibilityFlags="flagDefault"\n    android:canRetrieveWindowContent="false"')
+          cfg.write_text(c)
+
+          activity=Path('SmartGameBot/app/src/main/java/com/nixz/smartgamebot/MainActivity.java')
+          a=activity.read_text()
+          old2='''        projectionManager = (MediaProjectionManager)getSystemService(Context.MEDIA_PROJECTION_SERVICE);\n        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {\n            requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 80);\n        }\n        buildUi();'''
+          new2='''        projectionManager = (MediaProjectionManager)getSystemService(Context.MEDIA_PROJECTION_SERVICE);\n        try {\n            buildUi();\n        } catch (Throwable t) {\n            TextView emergency = new TextView(this);\n            emergency.setText("Smart Game Bot startup error:\\n" + t.getClass().getSimpleName() + ": " + String.valueOf(t.getMessage()));\n            emergency.setTextSize(18);\n            emergency.setPadding(32,64,32,32);\n            setContentView(emergency);\n        }'''
+          if old2 in a:
+              a=a.replace(old2,new2)
+          activity.write_text(a)
           PY
       - name: Build debug APK
         working-directory: SmartGameBot
         run: gradle --no-daemon assembleDebug
+      - name: Verify accessibility service in merged manifest
+        run: |
+          grep -R 'BotAccessibilityService' SmartGameBot/app/build/intermediates/merged_manifests -n
+          grep -R 'android:exported="true"' SmartGameBot/app/build/intermediates/merged_manifests -n
       - name: Collect APK
         run: cp SmartGameBot/app/build/outputs/apk/debug/app-debug.apk SmartGameBot.apk
       - name: Static APK sanity check
@@ -58,6 +74,6 @@ jobs:
           unzip -t SmartGameBot.apk >/dev/null
       - uses: actions/upload-artifact@v4
         with:
-          name: SmartGameBot-apk
+          name: SmartGameBot-accessibilityfix-apk
           path: SmartGameBot.apk
           if-no-files-found: error
