@@ -1,5 +1,6 @@
 package com.nixz.autopilot2d;
 
+import android.graphics.Color;
 import com.nixz.autopilot2d.core.PixelFrame;
 import java.util.*;
 
@@ -26,8 +27,9 @@ public class Match3Bot {
         Move best=findBest(board,true);
         if(best==null || best.score<1) { BotRuntime.setStatus("Match-3: scanning board"); return 260; }
         float x1=g.x(best.c1),y1=g.y(best.r1),x2=g.x(best.c2),y2=g.y(best.r2);
-        boolean targetsPlus = board[best.r1][best.c1].plus || board[best.r2][best.c2].plus;
-        BotRuntime.setStatus(targetsPlus ? "Match-3: +1 priority move" : "Match-3: best planned move");
+        boolean targetsPlus = clearsPlus(board,best);
+        int plusCount=0; for(int rr=0;rr<ROWS;rr++)for(int cc=0;cc<COLS;cc++)if(board[rr][cc].plus)plusCount++;
+        BotRuntime.setStatus(targetsPlus ? ("Match-3: CLEARING +1 | seen "+plusCount) : ("Match-3: setup | +1 seen "+plusCount));
         String mk=moveKey(best);
         boolean sent=BotAccessibilityService.swipePixels(x1,y1,x2,y2,150);
         if(sent){ pendingMove=mk; pendingBoardHash=bh; }
@@ -60,20 +62,68 @@ public class Match3Bot {
         Cell[][] out=new Cell[ROWS][COLS]; int good=0;
         for(int r=0;r<ROWS;r++) for(int c=0;c<COLS;c++){
             int t=Vision.dominantPalette(b,g.x(c),g.y(r),g.r); if(t>=0) good++;
-            boolean plus=t>=0 && Vision.plusBadge(b,g.x(c),g.y(r),g.r,t);
+            boolean plus=t>=0 && plusBadgeV2(b,g.x(c),g.y(r),g.r);
             boolean sp=t>=0 && Vision.specialOverlay(b,g.x(c),g.y(r),g.r,t,plus);
             out[r][c]=new Cell(t,plus,sp);
         }
         return good>=40?out:null;
     }
 
-    private Move findBest(Cell[][] board,boolean lookahead){
-        Move best=null;
-        for(int r=0;r<ROWS;r++) for(int c=0;c<COLS;c++){
-            if(c+1<COLS){ Move m=eval(board,r,c,r,c+1,lookahead); if(m!=null&&(best==null||m.score>best.score))best=m; }
-            if(r+1<ROWS){ Move m=eval(board,r,c,r+1,c,lookahead); if(m!=null&&(best==null||m.score>best.score))best=m; }
+    private boolean plusBadgeV2(PixelFrame b,float cx,float cy,float radius){
+        int w=b.width(),h=b.height();
+        int x0=Math.max(0,(int)(cx-radius*1.10f));
+        int x1=Math.min(w-1,(int)(cx-radius*.30f));
+        int y0=Math.max(0,(int)(cy-radius*1.18f));
+        int y1=Math.min(h-1,(int)(cy-radius*.05f));
+        if(x1<=x0||y1<=y0)return false;
+        int stepX=Math.max(1,(int)(radius*.025f));
+        int stepY=Math.max(1,(int)(radius*.020f));
+        int bestRun=0,bestDarkPct=0,darkPixels=0,totalPixels=0;
+        for(int x=x0;x<=x1;x+=stepX){
+            int run=0,maxRun=0,dark=0,total=0;
+            for(int y=y0;y<=y1;y+=stepY){
+                int c=b.argbAt(x,y);
+                int R=Color.red(c),G=Color.green(c),B=Color.blue(c);
+                int max=Math.max(R,Math.max(G,B)), min=Math.min(R,Math.min(G,B));
+                int lum=(R*3+G*4+B)/8;
+                boolean d=lum<165 && (max-min)<95;
+                total++; totalPixels++;
+                if(d){ dark++; darkPixels++; run++; if(run>maxRun)maxRun=run; } else run=0;
+            }
+            bestRun=Math.max(bestRun,maxRun);
+            if(total>0) bestDarkPct=Math.max(bestDarkPct,(dark*100)/total);
         }
-        return best;
+        int overall = totalPixels>0 ? (darkPixels*100)/totalPixels : 0;
+        return bestRun>=Math.max(8,(int)(radius*.42f)) && bestDarkPct>=30 && overall>=5;
+    }
+
+    private Move findBest(Cell[][] board,boolean lookahead){
+        Move best=null, directPlus=null;
+        for(int r=0;r<ROWS;r++) for(int c=0;c<COLS;c++){
+            if(c+1<COLS){
+                Move m=eval(board,r,c,r,c+1,lookahead);
+                if(m!=null){
+                    if(clearsPlus(board,m) && (directPlus==null||m.score>directPlus.score)) directPlus=m;
+                    if(best==null||m.score>best.score) best=m;
+                }
+            }
+            if(r+1<ROWS){
+                Move m=eval(board,r,c,r+1,c,lookahead);
+                if(m!=null){
+                    if(clearsPlus(board,m) && (directPlus==null||m.score>directPlus.score)) directPlus=m;
+                    if(best==null||m.score>best.score) best=m;
+                }
+            }
+        }
+        return directPlus!=null ? directPlus : best;
+    }
+
+    private boolean clearsPlus(Cell[][] src,Move m){
+        Cell[][] b=copy(src);
+        Cell t=b[m.r1][m.c1]; b[m.r1][m.c1]=b[m.r2][m.c2]; b[m.r2][m.c2]=t;
+        MatchInfo mi=findMatches(b);
+        for(int idx:mi.cells) if(b[idx/COLS][idx%COLS].plus) return true;
+        return false;
     }
 
     private Move eval(Cell[][] src,int r1,int c1,int r2,int c2,boolean lookahead){
@@ -86,11 +136,11 @@ public class Match3Bot {
         double score=mi.cells.size()*18 + mi.fours*95 + mi.fives*280;
         int plus=0,special=0;
         for(int idx:mi.cells){Cell x=b[idx/COLS][idx%COLS]; if(x.plus)plus++; if(x.special)special++;}
-        score += plus*10000 + special*500 + mi.lines*18;
+        score += plus*100000 + special*500 + mi.lines*18;
         for(int idx:mi.cells) score += (idx/COLS)*1.5;
         Cell[][] after=resolveKnownGravity(b,mi);
         if(lookahead){ Move next=findBest(after,false); if(next!=null) score += Math.min(12000,next.score)*.58; score += potential(after)*2.2; score += plusSetupPotential(after)*220; }
-        if(src[r1][c1].plus||src[r2][c2].plus) score+=2500;
+        if(src[r1][c1].plus||src[r2][c2].plus) score+=5000;
         if(src[r1][c1].special||src[r2][c2].special) score+=75;
         return new Move(r1,c1,r2,c2,score);
     }
