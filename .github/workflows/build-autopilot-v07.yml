@@ -1,10 +1,11 @@
-name: Build AutoPilot Match3 AI v1.0
+name: Build AutoPilot Match3 AI v1.1
 on:
   workflow_dispatch:
   push:
     branches: [autopilot2d-smartgames-20260828]
     paths:
       - 'v07src/**'
+      - 'v11src/**'
       - 'scripts/patch_match3_expectimax_v10.py'
       - '.github/workflows/build-autopilot-v07.yml'
 permissions:
@@ -28,30 +29,35 @@ jobs:
         run: cat autopilot_payload/chunk00.bin autopilot_payload/chunk01.bin autopilot_payload/chunk02.bin autopilot_payload/chunk03.bin autopilot_payload/chunk04.bin autopilot_payload/tail00.bin autopilot_payload/tail01.bin autopilot_payload/tail02.bin autopilot_payload/tail03.bin autopilot_payload/tail04.bin autopilot_payload/tail05.bin > AutoPilot2D-source.zip
       - name: Unpack
         run: unzip -o AutoPilot2D-source.zip
-      - name: Install Match3 AI
-        run: cp v07src/Match3Bot.java AutoPilot2D/app/src/main/java/com/nixz/autopilot2d/Match3Bot.java
+      - name: Install Match3 AI and persistent controller
+        run: |
+          cp v07src/Match3Bot.java AutoPilot2D/app/src/main/java/com/nixz/autopilot2d/Match3Bot.java
+          cp v11src/BotAccessibilityService.java AutoPilot2D/app/src/main/java/com/nixz/autopilot2d/BotAccessibilityService.java
       - name: Apply sampled expectimax planner
         run: python3 scripts/patch_match3_expectimax_v10.py
-      - name: Restore persistent floating controller
+      - name: Version
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('AutoPilot2D/app/src/main/java/com/nixz/autopilot2d/BotAccessibilityService.java')
+          import re
+          p=Path('AutoPilot2D/app/build.gradle')
           s=p.read_text()
-          s=s.replace('''        if (BotRuntime.captureReady) {\n            showOverlay();\n        }''','''        showOverlay();''')
-          s=s.replace('title.setText("CAR FLYER");','title.setText("MATCH-3 AI");')
+          s=re.sub(r'versionCode\s+\d+','versionCode 11',s)
+          s=re.sub(r'versionName\s+[\"\'][^\"\']+[\"\']','versionName "1.1-match3-expectimax-controller"',s)
           p.write_text(s)
           PY
       - name: Build APK
         working-directory: AutoPilot2D
         run: gradle --no-daemon assembleDebug
-      - name: Collect and verify APK
+      - name: Verify controller is compiled into APK
         run: |
-          cp AutoPilot2D/app/build/outputs/apk/debug/app-debug.apk SmartGameBot-AutoPilot-v1.0-Match3-AI.apk
-          test -s SmartGameBot-AutoPilot-v1.0-Match3-AI.apk
-          unzip -t SmartGameBot-AutoPilot-v1.0-Match3-AI.apk >/dev/null
+          cp AutoPilot2D/app/build/outputs/apk/debug/app-debug.apk SmartGameBot-AutoPilot-v1.1-Match3-AI.apk
+          test -s SmartGameBot-AutoPilot-v1.1-Match3-AI.apk
+          unzip -t SmartGameBot-AutoPilot-v1.1-Match3-AI.apk >/dev/null
+          for d in classes.dex classes2.dex classes3.dex; do unzip -p SmartGameBot-AutoPilot-v1.1-Match3-AI.apk "$d" 2>/dev/null || true; done | strings | grep -q 'MATCH-3 AI'
+          for d in classes.dex classes2.dex classes3.dex; do unzip -p SmartGameBot-AutoPilot-v1.1-Match3-AI.apk "$d" 2>/dev/null || true; done | strings | grep -q 'Tap control enabled — prepare capture'
       - uses: actions/upload-artifact@v4
         with:
-          name: SmartGameBot-AutoPilot-v1.0-Match3-AI-apk
-          path: SmartGameBot-AutoPilot-v1.0-Match3-AI.apk
+          name: SmartGameBot-AutoPilot-v1.1-Match3-AI-apk
+          path: SmartGameBot-AutoPilot-v1.1-Match3-AI.apk
           if-no-files-found: error
