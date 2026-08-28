@@ -25,6 +25,8 @@ jobs:
         run: cat build_payload/part00.b64 build_payload/part01.b64 build_payload/part02.b64 build_payload/part03.b64 | base64 -d > SmartGameBot_source.zip
       - name: Unpack source
         run: unzip -o SmartGameBot_source.zip
+      - name: Fix Java Process ambiguity
+        run: sed -i 's/Process\.THREAD_PRIORITY_DISPLAY/android.os.Process.THREAD_PRIORITY_DISPLAY/' SmartGameBot/app/src/main/java/com/nixz/smartgamebot/CaptureService.java
       - name: Build debug APK
         working-directory: SmartGameBot
         run: gradle --no-daemon assembleDebug
