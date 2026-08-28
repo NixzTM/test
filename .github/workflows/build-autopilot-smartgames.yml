@@ -22,7 +22,7 @@ jobs:
         run: yes | sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.9'
+          gradle-version: '8.11.1'
       - name: Rebuild source archive
         run: cat autopilot_payload/chunk00.bin autopilot_payload/chunk01.bin autopilot_payload/chunk02.bin autopilot_payload/chunk03.bin autopilot_payload/chunk04.bin autopilot_payload/tail00.bin autopilot_payload/tail01.bin autopilot_payload/tail02.bin autopilot_payload/tail03.bin autopilot_payload/tail04.bin autopilot_payload/tail05.bin > AutoPilot2D-smartgames-source.zip
       - name: Verify source archive
