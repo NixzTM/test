@@ -29,17 +29,169 @@ jobs:
         run: unzip -t AutoPilot2D-smartgames-source.zip
       - name: Unpack source
         run: unzip -o AutoPilot2D-smartgames-source.zip
+      - name: Apply v0.3 game intelligence fixes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          # --- Fix +1 detection: actual badge is pale/gray and sits upper-left, not green. ---
+          p=Path('AutoPilot2D/app/src/main/java/com/nixz/autopilot2d/Vision.java')
+          s=p.read_text()
+          a=s.index('    static boolean plusBadge(')
+          z=s.index('    static boolean specialOverlay', a)
+          repl='''    static boolean plusBadge(PixelFrame b,float cx,float cy,float radius,int baseType){
+              int w=b.width(),h=b.height();
+              float sx=cx-radius*.82f, sy=cy-radius*.75f;
+              float rr=Math.max(8f,radius*.36f);
+              int pale=0,dark=0,saturated=0,yellow=0,total=0;
+              int step=Math.max(1,(int)(rr/12f));
+              for(int y=(int)(sy-rr);y<=(int)(sy+rr);y+=step){
+                  for(int x=(int)(sx-rr);x<=(int)(sx+rr);x+=step){
+                      float dx=x-sx,dy=y-sy;if(dx*dx+dy*dy>rr*rr)continue;
+                      if(x<0||y<0||x>=w||y>=h)continue;
+                      int c=b.argbAt(x,y); int R=Color.red(c),G=Color.green(c),B=Color.blue(c);
+                      float[] hsv=new float[3];Color.colorToHSV(c,hsv); total++;
+                      if(hsv[1]<.25f && hsv[2]>.72f) pale++;
+                      if((R+G+B)/3<150) dark++;
+                      if(hsv[1]>.45f && hsv[2]>.50f) saturated++;
+                      if(hsv[0]>=35f&&hsv[0]<=75f&&hsv[1]>.45f&&hsv[2]>.50f) yellow++;
+                  }
+              }
+              if(total<20)return false;
+              float P=pale/(float)total,D=dark/(float)total,S=saturated/(float)total,Y=yellow/(float)total;
+              return P>.56f && D>.018f && D<.18f && S<.23f && Y<.09f;
+          }
+
+          '''
+          p.write_text(s[:a]+repl+s[z:])
+
+          # --- Match-3: +1 is the primary objective, including 2-ply setup moves. ---
+          p=Path('AutoPilot2D/app/src/main/java/com/nixz/autopilot2d/Match3Bot.java')
+          s=p.read_text()
+          s=s.replace('Move best=findBest(board,true);\n        if(best==null || best.score<1) return 260;', 'Move best=findBest(board,true);\n        if(best==null || best.score<1) { BotRuntime.setStatus("Match-3: scanning board"); return 260; }')
+          s=s.replace('BotAccessibilityService.swipePixels(x1,y1,x2,y2,120);\n        return 520;', 'boolean targetsPlus = board[best.r1][best.c1].plus || board[best.r2][best.c2].plus;\n        BotRuntime.setStatus(targetsPlus ? "Match-3: +1 priority move" : "Match-3: best planned move");\n        BotAccessibilityService.swipePixels(x1,y1,x2,y2,120);\n        return 520;')
+          s=s.replace('score += plus*1200 + special*240;', 'score += plus*10000 + special*500;')
+          s=s.replace('if(next!=null) score += Math.min(500,next.score)*.34;\n            score += potential(after)*2.2;', 'if(next!=null) score += Math.min(12000,next.score)*.58;\n            score += potential(after)*2.2;\n            score += plusSetupPotential(after)*220;')
+          s=s.replace('if(src[r1][c1].plus||src[r2][c2].plus) score+=180;', 'if(src[r1][c1].plus||src[r2][c2].plus) score+=2500;')
+          marker='    private Cell[][] copy('
+          extra='''    private int plusSetupPotential(Cell[][] b){
+              int p=0;
+              for(int r=0;r<ROWS;r++) for(int c=0;c<COLS;c++){
+                  Cell z=b[r][c]; if(!z.plus || z.type<0) continue;
+                  int t=z.type,same=0;
+                  for(int dr=-2;dr<=2;dr++) for(int dc=-2;dc<=2;dc++){
+                      if(Math.abs(dr)+Math.abs(dc)==0 || Math.abs(dr)+Math.abs(dc)>2) continue;
+                      int rr=r+dr,cc=c+dc;if(rr<0||rr>=ROWS||cc<0||cc>=COLS)continue;
+                      if(b[rr][cc].type==t) same += (Math.abs(dr)+Math.abs(dc)==1)?3:1;
+                  }
+                  p += same;
+              }
+              return p;
+          }
+
+          '''
+          s=s.replace(marker,extra+marker)
+          p.write_text(s)
+
+          # --- Bubble: detect yellow coin circles first, then OCR their center digits. ---
+          p=Path('AutoPilot2D/app/src/main/java/com/nixz/autopilot2d/BubbleBot.java')
+          s=p.read_text()
+          s=s.replace('List<Bubble> balls=detectBubbles(b);\n        if(balls.size()<2) return 180;', 'List<Bubble> balls=detectBubbles(b);\n        if(balls.size()<2) { BotRuntime.setStatus("Bubble: scanning coins ("+balls.size()+")"); return 180; }')
+          s=s.replace('if(shooter==null) return 180;', 'if(shooter==null) { BotRuntime.setStatus("Bubble: shooter not found"); return 180; }')
+          s=s.replace('if(field.isEmpty()) return 180;\n        Shot best=plan(b,shooter,field);\n        if(best==null) return 220;\n        BotAccessibilityService.tapPixels(best.aimX,best.aimY,45);', 'if(field.isEmpty()) { BotRuntime.setStatus("Bubble: no targets found"); return 180; }\n        Shot best=plan(b,shooter,field);\n        if(best==null) { BotRuntime.setStatus("Bubble: no safe shot"); return 220; }\n        BotRuntime.setStatus(best.target!=null ? ("Bubble: "+shooter.value+" → "+best.target.value+(best.bank?" bank":" direct")) : ("Bubble: safe setup for "+shooter.value));\n        BotAccessibilityService.tapPixels(best.aimX,best.aimY,45);')
+          a=s.index('    private List<Bubble> detectBubbles(PixelFrame b){')
+          z=s.index('    static class YellowCircle', a)
+          repl='''    private List<Bubble> detectBubbles(PixelFrame b){
+              int W=b.width(),H=b.height();
+              int scale=Math.max(2,W/300);
+              int sw=(W+scale-1)/scale, sh=(H+scale-1)/scale;
+              boolean[] yellow=new boolean[sw*sh];
+              for(int yy=0;yy<sh;yy++){
+                  int y=Math.min(H-1,yy*scale+scale/2);
+                  for(int xx=0;xx<sw;xx++){
+                      int x=Math.min(W-1,xx*scale+scale/2), c=b.argbAt(x,y);
+                      float[] hsv=new float[3]; Color.colorToHSV(c,hsv);
+                      yellow[yy*sw+xx]= y>H*.07f && y<H*.88f && hsv[0]>=30f && hsv[0]<=72f && hsv[1]>.42f && hsv[2]>.50f;
+                  }
+              }
+              boolean[] seen=new boolean[yellow.length];
+              int[] qx=new int[yellow.length],qy=new int[yellow.length];
+              ArrayList<Bubble> out=new ArrayList<>();
+              for(int yy=1;yy<sh-1;yy++) for(int xx=1;xx<sw-1;xx++){
+                  int id=yy*sw+xx; if(!yellow[id]||seen[id])continue;
+                  int qh=0,qt=0; qx[qt]=xx;qy[qt++]=yy;seen[id]=true;
+                  int minX=xx,maxX=xx,minY=yy,maxY=yy,count=0; long sx=0,sy=0;
+                  while(qh<qt){
+                      int x=qx[qh],y=qy[qh++]; count++; sx+=x;sy+=y;
+                      minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y);
+                      for(int oy=-1;oy<=1;oy++)for(int ox=-1;ox<=1;ox++){
+                          if(ox==0&&oy==0)continue;int nx=x+ox,ny=y+oy;if(nx<0||ny<0||nx>=sw||ny>=sh)continue;
+                          int ni=ny*sw+nx;if(yellow[ni]&&!seen[ni]){seen[ni]=true;qx[qt]=nx;qy[qt++]=ny;}
+                      }
+                  }
+                  float pw=(maxX-minX+1)*scale, ph=(maxY-minY+1)*scale;
+                  if(count<18 || pw<W*.045f || ph<W*.045f || pw>W*.19f || ph>W*.19f)continue;
+                  float ratio=pw/ph;if(ratio<.68f||ratio>1.42f)continue;
+                  float cx=(sx/(float)count)*scale+scale*.5f, cy=(sy/(float)count)*scale+scale*.5f;
+                  float r=Math.max(pw,ph)*.52f;
+                  int value=readValueInCircle(b,cx,cy,r);
+                  if(value>0 && isPowerTwo(value)) out.add(new Bubble(cx,cy,r,value,.80));
+              }
+              out.sort((a,z)->Float.compare(z.r,a.r));
+              ArrayList<Bubble> dedup=new ArrayList<>();
+              for(Bubble q:out){
+                  boolean dup=false;for(Bubble e:dedup) if(dist(q.x,q.y,e.x,e.y)<Math.max(q.r,e.r)*.62f){dup=true;break;}
+                  if(!dup)dedup.add(q);
+              }
+              return dedup;
+          }
+
+          private int readValueInCircle(PixelFrame b,float cx,float cy,float r){
+              int W=b.width(),H=b.height();
+              int x0=Math.max(0,(int)(cx-r*.45f)),x1=Math.min(W-1,(int)(cx+r*.45f));
+              int y0=Math.max(0,(int)(cy-r*.48f)),y1=Math.min(H-1,(int)(cy+r*.48f));
+              int ww=x1-x0+1,hh=y1-y0+1;if(ww<5||hh<7)return -1;
+              boolean[] dark=new boolean[ww*hh];
+              for(int y=0;y<hh;y++)for(int x=0;x<ww;x++){
+                  int c=b.argbAt(x0+x,y0+y);int br=(Color.red(c)+Color.green(c)+Color.blue(c))/3;
+                  dark[y*ww+x]=br<145;
+              }
+              boolean[] seen=new boolean[dark.length];int[] qx=new int[dark.length],qy=new int[dark.length];
+              ArrayList<int[]> comps=new ArrayList<>();
+              for(int y=0;y<hh;y++)for(int x=0;x<ww;x++){
+                  int id=y*ww+x;if(!dark[id]||seen[id])continue;int qh=0,qt=0;qx[qt]=x;qy[qt++]=y;seen[id]=true;
+                  int ax=x,bx=x,ay=y,by=y,n=0;
+                  while(qh<qt){int px=qx[qh],py=qy[qh++];n++;ax=Math.min(ax,px);bx=Math.max(bx,px);ay=Math.min(ay,py);by=Math.max(by,py);
+                      for(int oy=-1;oy<=1;oy++)for(int ox=-1;ox<=1;ox++){if(ox==0&&oy==0)continue;int nx=px+ox,ny=py+oy;if(nx<0||ny<0||nx>=ww||ny>=hh)continue;int ni=ny*ww+nx;if(dark[ni]&&!seen[ni]){seen[ni]=true;qx[qt]=nx;qy[qt++]=ny;}}
+                  }
+                  int cw=bx-ax+1,ch=by-ay+1;
+                  if(n>=3 && ch>=hh*.22f && cw>=2 && cw<ww*.65f && ch<hh*.95f) comps.add(new int[]{ax,ay,bx,by,n});
+              }
+              if(comps.isEmpty())return -1;
+              comps.sort(Comparator.comparingInt(a->a[0]));
+              ArrayList<int[]> glyphs=new ArrayList<>();
+              for(int[] c:comps){float gx=(c[0]+c[2])*.5f;if(gx<ww*.08f||gx>ww*.92f)continue;glyphs.add(c);}
+              if(glyphs.isEmpty()||glyphs.size()>3)return -1;
+              StringBuilder text=new StringBuilder();double conf=0;
+              for(int[] c:glyphs){Digit d=recognizeDigit(b,x0+c[0],y0+c[1],x0+c[2]+1,y0+c[3]+1);if(d.n<0||d.conf<.18)return -1;text.append(d.n);conf+=d.conf;}
+              try{int v=Integer.parseInt(text.toString());return conf/glyphs.size()>=.20?v:-1;}catch(Exception e){return -1;}
+          }
+
+          '''
+          p.write_text(s[:a]+repl+s[z:])
+          PY
       - name: Build APK
         working-directory: AutoPilot2D
         run: gradle --no-daemon assembleDebug
       - name: Collect APK
-        run: cp AutoPilot2D/app/build/outputs/apk/debug/app-debug.apk SmartGameBot-AutoPilot.apk
+        run: cp AutoPilot2D/app/build/outputs/apk/debug/app-debug.apk SmartGameBot-AutoPilot-v0.3.apk
       - name: APK sanity check
         run: |
-          test -s SmartGameBot-AutoPilot.apk
-          unzip -t SmartGameBot-AutoPilot.apk >/dev/null
+          test -s SmartGameBot-AutoPilot-v0.3.apk
+          unzip -t SmartGameBot-AutoPilot-v0.3.apk >/dev/null
       - uses: actions/upload-artifact@v4
         with:
-          name: SmartGameBot-AutoPilot-apk
-          path: SmartGameBot-AutoPilot.apk
+          name: SmartGameBot-AutoPilot-v0.3-apk
+          path: SmartGameBot-AutoPilot-v0.3.apk
           if-no-files-found: error
