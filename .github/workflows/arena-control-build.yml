@@ -20,27 +20,15 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
-      - name: Inspect preinstalled Android SDK
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          ls -la "$ANDROID_HOME/platforms" || true
-          ls -la "$ANDROID_HOME/build-tools" || true
-      - name: Decode source
-        run: |
-          base64 -d ArenaControl-source.zip.b64 > ArenaControl-source.zip
-          rm -rf buildsrc
-          mkdir buildsrc
-          unzip -q ArenaControl-source.zip -d buildsrc
       - name: Build debug APK
-        working-directory: buildsrc/ArenaControl
+        working-directory: ArenaControl
         run: gradle --no-daemon clean assembleDebug
       - name: Verify APK
         run: |
-          test -f buildsrc/ArenaControl/app/build/outputs/apk/debug/app-debug.apk
-          sha256sum buildsrc/ArenaControl/app/build/outputs/apk/debug/app-debug.apk
+          test -f ArenaControl/app/build/outputs/apk/debug/app-debug.apk
+          sha256sum ArenaControl/app/build/outputs/apk/debug/app-debug.apk
       - uses: actions/upload-artifact@v4
         with:
           name: ArenaControl-debug-apk
-          path: buildsrc/ArenaControl/app/build/outputs/apk/debug/app-debug.apk
+          path: ArenaControl/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
