@@ -36,6 +36,7 @@ jobs:
           python3 redesign_v28.py
           python3 redesign_v29.py
           python3 redesign_v210.py
+          python3 redesign_v211.py
 
       - name: Verify architecture and controls
         run: |
@@ -56,8 +57,9 @@ jobs:
           grep -q 'addNav("PLAYERS",this::showPlayerDirectory)' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q 'PLAYER DIRECTORY' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q 'localSentChat' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q 'else sc.scrollTo(0,restoreY)' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q 'for(int i=a.length()-1;i>=0;i--)' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q 'updateChatListInPlace(out.chat)' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q 'if(sig.equals(lastChatSignature))return' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
 
       - name: Build debug APK
         working-directory: ArenaControl
@@ -69,12 +71,12 @@ jobs:
           sha256sum ArenaControl/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Package source
-        run: zip -qr ArenaControl-native-v2.10-source.zip ArenaControl
+        run: zip -qr ArenaControl-native-v2.11-source.zip ArenaControl
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ArenaControl-native-v2.10
+          name: ArenaControl-native-v2.11
           path: |
             ArenaControl/app/build/outputs/apk/debug/app-debug.apk
-            ArenaControl-native-v2.10-source.zip
+            ArenaControl-native-v2.11-source.zip
           if-no-files-found: error
