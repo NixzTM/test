@@ -39,18 +39,15 @@ chat='''  private void renderChatPane(LinearLayout live,ParsedControl pc){
   }'''
 s=repl_method(s,'  private void renderChatPane(LinearLayout live,ParsedControl pc)',chat)
 
-# Stop trying the unreachable relay during refresh.
 start='''  private void startLive(){
     stopLive(); liveTask=timer.scheduleWithFixedDelay(()->{if(screen!=Screen.SERVER||!authenticated||destroyed)return;try{HttpResult r=request("GET",BASE+"/control.php?server="+enc(KEYS.get(server)),null);ensureAdmin(r);ParsedControl pc=parseControl(r.body);runOnUiThread(()->{if(screen==Screen.SERVER)renderControl(pc);});}catch(Exception e){if(e.getMessage()!=null&&e.getMessage().contains("session"))sessionExpired();}},3,3,TimeUnit.SECONDS);
   }'''
 s=repl_method(s,'  private void startLive()',start)
 
-# Add full width player row helper before existing compact helper.
 mark='  private View compactPlayerRow(Player p)'
-helper='''  private View fullPlayerRow(Player p){LinearLayout r=new LinearLayout(this);r.setGravity(Gravity.CENTER_VERTICAL);r.setPadding(dp(8),dp(7),dp(8),dp(7));r.setBackground(round(Color.rgb(7,21,32),1,BORDER,9));LinearLayout text=new LinearLayout(this);text.setOrientation(LinearLayout.VERTICAL);TextView n=txt("",14,Color.WHITE,true);n.setSingleLine(true);n.setEllipsize(TextUtils.TruncateAt.END);n.setText(TmnfText.render(p.rawNick.isEmpty()?p.plainNick:p.rawNick,Color.WHITE));text.addView(n);TextView lg=txt(p.login,10,MUTED,false);lg.setSingleLine(true);text.addView(lg);r.addView(text,new LinearLayout.LayoutParams(0,-2,1));Button pm=ghost("PM");pm.setOnClickListener(v->promptText("PM · "+p.login,"Message",m->submit("player.message",p.login,m,"0")));r.addView(pm,new LinearLayout.LayoutParams(dp(58),dp(38)));Button more=ghost("•••");more.setOnClickListener(v->showPlayerActions(p));r.addView(more,new LinearLayout.LayoutParams(dp(58),dp(38)));return r;}\n'''
+helper='''  private View fullPlayerRow(Player p){LinearLayout r=new LinearLayout(this);r.setGravity(Gravity.CENTER_VERTICAL);r.setPadding(dp(8),dp(7),dp(8),dp(7));r.setBackground(round(Color.rgb(7,21,32),1,BORDER,9));LinearLayout text=new LinearLayout(this);text.setOrientation(LinearLayout.VERTICAL);TextView n=txt("",14,Color.WHITE,true);n.setSingleLine(true);n.setEllipsize(TextUtils.TruncateAt.END);n.setText(p.nickHtml.isEmpty()?TmnfText.render(p.plainNick,Color.WHITE):renderNickHtml(p.nickHtml));text.addView(n);TextView lg=txt(p.login,10,MUTED,false);lg.setSingleLine(true);text.addView(lg);r.addView(text,new LinearLayout.LayoutParams(0,-2,1));Button pm=ghost("PM");pm.setOnClickListener(v->promptText("PM · "+p.login,"Message",m->submit("player.message",p.login,m,"0")));r.addView(pm,new LinearLayout.LayoutParams(dp(58),dp(38)));Button more=ghost("•••");more.setOnClickListener(v->showPlayerActions(p));r.addView(more,new LinearLayout.LayoutParams(dp(58),dp(38)));return r;}\n'''
 if mark not in s: raise SystemExit('missing helper marker')
 s=s.replace(mark,helper+mark,1)
 
-# The constant remains for source compatibility, but the app no longer calls the relay.
 p.write_text(s)
 print('v2.4 applied')
