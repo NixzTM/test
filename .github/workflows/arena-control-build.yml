@@ -23,6 +23,10 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
+      - name: Apply v2.3 premium UI redesign
+        working-directory: ArenaControl
+        run: python3 redesign_v23.py
+
       - name: Verify website-auth live architecture
         run: |
           test -f ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
@@ -30,10 +34,13 @@ jobs:
           test -f ArenaControl/app/src/main/res/raw/arena_logo_b64.txt
           ! grep -R "WebView\|com.jcraft.jsch\|Game VPS login\|SSH password\|private key" ArenaControl/app/src/main/java
           grep -q "owner/admin" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "LIVE SERVER CHAT" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "REAL-TIME CONTROL CONSOLE" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "onBackPressed" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "startKeepAlive" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "SERVER ACTIONS" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "ONLINE PLAYERS" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "CONSOLE" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "player.ban" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "map.restart" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "map.skip" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "chat.announce" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "AC3" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "AC4" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "AC7" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
@@ -48,12 +55,12 @@ jobs:
           sha256sum ArenaControl/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Package source
-        run: zip -qr ArenaControl-native-v2.2-source.zip ArenaControl
+        run: zip -qr ArenaControl-native-v2.3-source.zip ArenaControl
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ArenaControl-native-v2.2
+          name: ArenaControl-native-v2.3
           path: |
             ArenaControl/app/build/outputs/apk/debug/app-debug.apk
-            ArenaControl-native-v2.2-source.zip
+            ArenaControl-native-v2.3-source.zip
           if-no-files-found: error
