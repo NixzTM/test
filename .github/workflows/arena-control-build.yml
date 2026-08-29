@@ -25,7 +25,9 @@ jobs:
 
       - name: Apply v2.3 premium UI redesign
         working-directory: ArenaControl
-        run: python3 redesign_v23.py
+        run: |
+          python3 redesign_v23.py
+          python3 redesign_v23_fix.py
 
       - name: Verify website-auth live architecture
         run: |
