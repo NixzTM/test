@@ -1,0 +1,11 @@
+from pathlib import Path
+p=Path('app/src/main/java/com/arenacommunity/control/MainActivity.java')
+s=p.read_text()
+s=s.replace('"Manage\nPlayers"','"Manage\\nPlayers"')
+s=s.replace('"Search\nPlayers"','"Search\\nPlayers"')
+s=s.replace('"Chat unavailable\n"+pc.chatError','"Chat unavailable\\n"+pc.chatError')
+s=s.replace('.append("\n").append(TmnfText.render(m.message,Color.WHITE))','.append("\\n").append(TmnfText.render(m.message,Color.WHITE))')
+s=s.replace('x.status+"]\n"+x.actor','x.status+"]\\n"+x.actor')
+s=s.replace('x.result.isEmpty()?"":"\n↳ "+x.result','x.result.isEmpty()?"":"\\n↳ "+x.result')
+p.write_text(s)
+print('v2.3 string escapes repaired')
