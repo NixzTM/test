@@ -56,50 +56,52 @@ jobs:
 
       - name: Verify architecture and controls
         run: |
-          test -f ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          set -euxo pipefail
+          J=ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          test -f "$J"
           test -f ArenaControl/app/src/main/java/com/arenacommunity/control/TmnfText.java
           test -f ArenaControl/app/src/main/res/raw/arena_logo_b64.txt
           test -f ArenaControl/app/src/main/res/drawable-nodpi/arena_app_icon.png
           grep -q 'android:icon="@drawable/arena_app_icon"' ArenaControl/app/src/main/AndroidManifest.xml
           grep -q 'android:configChanges="orientation|screenSize|keyboardHidden"' ArenaControl/app/src/main/AndroidManifest.xml
           ! grep -R "WebView\|com.jcraft.jsch\|Game VPS login\|SSH password\|private key" ArenaControl/app/src/main/java
-          grep -q "owner/admin" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "https://87.237.52.153:47832" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "https://87.237.52.153:47834" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "https://87.237.52.153:47837" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "mobileBase(String srv)" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "mobileActionFor(String srv" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "controlServer=server" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "submitServer=server" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "actionServer=server" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "rowServer=server" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "switchServer(String srv)" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "chatViewServer" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "chatSignatureByServer" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "chatBaselineKeyByServer" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "observedChatByServer" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "chatSnapshotKeysByServer" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "loadServer=server" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "pollServer=server" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "setOnApplyWindowInsetsListener" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          test "$(grep -c 'private List<ChatLine> loadMobileChat(String srv)' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java)" -eq 1
-          test "$(grep -c 'private List<ChatLine> loadMobileChat()' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java)" -eq 1
-          grep -q '/v1/chat?limit=120' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "renderedPlayerNick(Player p)" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "chatNickname" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "insertChatCode(EditText e,String code)" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q 'String wire=chosen+"$z$fff: "+m' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "timer.add" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "map.previous" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "map.erase" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "vote.disable" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "bet.cancel" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "/v1/players/search" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "/v1/bans" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q 'addNav("PLAYERS",this::showPlayerDirectory)' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q 'PLAYER DIRECTORY' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q 'updateChatListInPlace(out.chat)' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q 'unban recorded locally but RPC failed' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "owner/admin" "$J"
+          grep -q "https://87.237.52.153:47832" "$J"
+          grep -q "https://87.237.52.153:47834" "$J"
+          grep -q "https://87.237.52.153:47837" "$J"
+          grep -q "mobileBase(String srv)" "$J"
+          grep -q "mobileActionFor(String srv" "$J"
+          grep -q "controlServer=server" "$J"
+          grep -q "submitServer=server" "$J"
+          grep -q "actionServer=server" "$J"
+          grep -q "rowServer=server" "$J"
+          grep -q "switchServer(String srv)" "$J"
+          grep -q "chatViewServer" "$J"
+          grep -q "chatSignatureByServer" "$J"
+          grep -q "observedChatByServer" "$J"
+          grep -q "chatSnapshotKeysByServer" "$J"
+          grep -q "loadServer=server" "$J"
+          grep -q "pollServer=server" "$J"
+          grep -q "setOnApplyWindowInsetsListener" "$J"
+          test "$(grep -c 'private List<ChatLine> loadMobileChat(String srv)' "$J")" -eq 1
+          test "$(grep -c 'private List<ChatLine> loadMobileChat()' "$J")" -eq 1
+          grep -q '/v1/chat?limit=120' "$J"
+          grep -q "chatSnapshotKeysByServer.get(srv)" "$J"
+          grep -q "chatSnapshotKeysByServer.put(srv" "$J"
+          grep -q "renderedPlayerNick(Player p)" "$J"
+          grep -q "chatNickname" "$J"
+          grep -q "insertChatCode(EditText e,String code)" "$J"
+          grep -q "timer.add" "$J"
+          grep -q "map.previous" "$J"
+          grep -q "map.erase" "$J"
+          grep -q "vote.disable" "$J"
+          grep -q "bet.cancel" "$J"
+          grep -q "/v1/players/search" "$J"
+          grep -q "/v1/bans" "$J"
+          grep -q 'addNav("PLAYERS",this::showPlayerDirectory)' "$J"
+          grep -q 'PLAYER DIRECTORY' "$J"
+          grep -q 'updateChatListInPlace(out.chat)' "$J"
+          grep -q 'unban recorded locally but RPC failed' "$J"
 
       - name: Build debug APK
         working-directory: ArenaControl
