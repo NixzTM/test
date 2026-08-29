@@ -12,7 +12,7 @@ s=s.replace('private LinearLayout pair(String l1,String a1,String l2,String a2){
 needle='''  private void renderControl(ParsedControl pc){
     if(screen!=Screen.SERVER)return;title.setText("ARENA CONTROL");body.removeAllViews();'''
 if needle not in s: raise SystemExit('renderControl marker missing')
-s=s.replace(needle,''''  private void renderControl(ParsedControl pc){
+s=s.replace(needle,'''  private void renderControl(ParsedControl pc){
     if(screen!=Screen.SERVER)return;final String controlServer=server;title.setText("ARENA CONTROL");body.removeAllViews();''',1)
 
 repls={
