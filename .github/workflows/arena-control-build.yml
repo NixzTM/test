@@ -23,11 +23,12 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
-      - name: Apply v2.3 premium UI redesign
+      - name: Apply premium UI redesign
         working-directory: ArenaControl
         run: |
           python3 redesign_v23.py
           python3 redesign_v23_fix.py
+          python3 redesign_v24.py
 
       - name: Verify website-auth live architecture
         run: |
@@ -57,12 +58,12 @@ jobs:
           sha256sum ArenaControl/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Package source
-        run: zip -qr ArenaControl-native-v2.3-source.zip ArenaControl
+        run: zip -qr ArenaControl-native-v2.4-source.zip ArenaControl
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ArenaControl-native-v2.3
+          name: ArenaControl-native-v2.4
           path: |
             ArenaControl/app/build/outputs/apk/debug/app-debug.apk
-            ArenaControl-native-v2.3-source.zip
+            ArenaControl-native-v2.4-source.zip
           if-no-files-found: error
