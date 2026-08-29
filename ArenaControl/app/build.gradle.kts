@@ -10,8 +10,8 @@ android {
         applicationId = "com.arenacommunity.control"
         minSdk = 26
         targetSdk = 35
-        versionCode = 8
-        versionName = "2.5.0"
+        versionCode = 9
+        versionName = "2.7.0"
     }
 
     buildTypes {
