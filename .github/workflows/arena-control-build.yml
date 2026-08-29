@@ -23,7 +23,7 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
-      - name: Apply premium UI and AC3 direct transport
+      - name: Apply premium UI and direct transport
         working-directory: ArenaControl
         run: |
           python3 redesign_v23.py
@@ -31,6 +31,7 @@ jobs:
           python3 redesign_v24.py
           python3 redesign_v25.py
           python3 redesign_v25_fix.py
+          python3 redesign_v26.py
 
       - name: Verify architecture and controls
         run: |
@@ -51,6 +52,11 @@ jobs:
           grep -q "/v1/chat" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "/v1/console" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "player.ban" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q 'return "LJA"' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q 'return "HUNT #1"' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q 'return "HUNT #2"' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q 'chatComposer.hasFocus' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q 'LATEST' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
 
       - name: Build debug APK
         working-directory: ArenaControl
@@ -62,12 +68,12 @@ jobs:
           sha256sum ArenaControl/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Package source
-        run: zip -qr ArenaControl-native-v2.5-source.zip ArenaControl
+        run: zip -qr ArenaControl-native-v2.6-source.zip ArenaControl
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ArenaControl-native-v2.5
+          name: ArenaControl-native-v2.6
           path: |
             ArenaControl/app/build/outputs/apk/debug/app-debug.apk
-            ArenaControl-native-v2.5-source.zip
+            ArenaControl-native-v2.6-source.zip
           if-no-files-found: error
