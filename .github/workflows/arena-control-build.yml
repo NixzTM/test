@@ -40,6 +40,7 @@ jobs:
           python3 redesign_v212.py
           python3 redesign_v213.py
           python3 redesign_v214.py
+          python3 redesign_v215.py
 
       - name: Verify architecture and controls
         run: |
@@ -51,8 +52,10 @@ jobs:
           grep -q "https://87.237.52.153:47832" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "https://87.237.52.153:47834" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "https://87.237.52.153:47837" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "mobileBase()" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q "MOBILE_CERT_SHA256" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "mobileBase(String srv)" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "mobileActionFor(String srv" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "localSentChatByServer" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "lastServerChatKeyByServer" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "timer.add" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "map.previous" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "map.erase" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
@@ -65,7 +68,6 @@ jobs:
           grep -q 'updateChatListInPlace(out.chat)' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q 'if(sig.equals(lastChatSignature))return' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q 'localSentAnchors' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q 'lastServerChatKey' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q 'unban recorded locally but RPC failed' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
 
       - name: Build debug APK
@@ -78,12 +80,12 @@ jobs:
           sha256sum ArenaControl/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Package source
-        run: zip -qr ArenaControl-native-v2.14-source.zip ArenaControl
+        run: zip -qr ArenaControl-native-v2.15-source.zip ArenaControl
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ArenaControl-native-v2.14
+          name: ArenaControl-native-v2.15
           path: |
             ArenaControl/app/build/outputs/apk/debug/app-debug.apk
-            ArenaControl-native-v2.14-source.zip
+            ArenaControl-native-v2.15-source.zip
           if-no-files-found: error
