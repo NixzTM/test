@@ -48,6 +48,7 @@ jobs:
           python3 redesign_v220.py
           python3 redesign_v221.py
           python3 redesign_v222.py
+          python3 redesign_v223.py
 
       - name: Verify architecture and controls
         run: |
@@ -56,6 +57,7 @@ jobs:
           test -f ArenaControl/app/src/main/res/raw/arena_logo_b64.txt
           test -f ArenaControl/app/src/main/res/drawable-nodpi/arena_app_icon.png
           grep -q 'android:icon="@drawable/arena_app_icon"' ArenaControl/app/src/main/AndroidManifest.xml
+          grep -q 'android:configChanges="orientation|screenSize|keyboardHidden"' ArenaControl/app/src/main/AndroidManifest.xml
           ! grep -R "WebView\|com.jcraft.jsch\|Game VPS login\|SSH password\|private key" ArenaControl/app/src/main/java
           grep -q "owner/admin" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "https://87.237.52.153:47832" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
@@ -69,6 +71,7 @@ jobs:
           grep -q "rowServer=server" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "switchServer(String srv)" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "chatViewServer" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "chatSignatureByServer" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "loadServer=server" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "pollServer=server" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           test "$(grep -c 'private List<ChatLine> loadMobileChat(String srv)' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java)" -eq 1
@@ -88,7 +91,6 @@ jobs:
           grep -q 'addNav("PLAYERS",this::showPlayerDirectory)' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q 'PLAYER DIRECTORY' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q 'updateChatListInPlace(out.chat)' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
-          grep -q 'if(sig.equals(lastChatSignature))return' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q 'unban recorded locally but RPC failed' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
 
       - name: Build debug APK
@@ -101,12 +103,12 @@ jobs:
           sha256sum ArenaControl/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Package source
-        run: zip -qr ArenaControl-native-v2.22-source.zip ArenaControl
+        run: zip -qr ArenaControl-native-v2.23-source.zip ArenaControl
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ArenaControl-native-v2.22
+          name: ArenaControl-native-v2.23
           path: |
             ArenaControl/app/build/outputs/apk/debug/app-debug.apk
-            ArenaControl-native-v2.22-source.zip
+            ArenaControl-native-v2.23-source.zip
           if-no-files-found: error
