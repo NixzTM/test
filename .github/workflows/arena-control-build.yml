@@ -44,6 +44,7 @@ jobs:
           python3 redesign_v216.py
           python3 redesign_v217.py
           python3 redesign_v218.py
+          python3 redesign_v219.py
 
       - name: Verify architecture and controls
         run: |
@@ -68,6 +69,10 @@ jobs:
           grep -q "pollServer=server" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "loadMobileChat(String srv)" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           test "$(grep -c 'private List<ChatLine> loadMobileChat()' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java)" -eq 1
+          grep -q "renderedPlayerNick(Player p)" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "chatNickname" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "insertChatCode(EditText e,String code)" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q 'String wire=chosen+"$z$fff: "+m' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "timer.add" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "map.previous" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "map.erase" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
@@ -92,12 +97,12 @@ jobs:
           sha256sum ArenaControl/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Package source
-        run: zip -qr ArenaControl-native-v2.18-source.zip ArenaControl
+        run: zip -qr ArenaControl-native-v2.19-source.zip ArenaControl
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ArenaControl-native-v2.18
+          name: ArenaControl-native-v2.19
           path: |
             ArenaControl/app/build/outputs/apk/debug/app-debug.apk
-            ArenaControl-native-v2.18-source.zip
+            ArenaControl-native-v2.19-source.zip
           if-no-files-found: error
