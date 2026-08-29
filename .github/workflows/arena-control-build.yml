@@ -33,6 +33,7 @@ jobs:
           python3 redesign_v25_fix.py
           python3 redesign_v26.py
           python3 redesign_v27.py
+          python3 redesign_v28.py
 
       - name: Verify architecture and controls
         run: |
@@ -59,6 +60,8 @@ jobs:
           grep -q 'return "HUNT #1"' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q 'return "HUNT #2"' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q 'chatComposer.hasFocus' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q 'PLAYER DIRECTORY' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q 'chatSavedY' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q 'LATEST' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
 
       - name: Build debug APK
@@ -71,12 +74,12 @@ jobs:
           sha256sum ArenaControl/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Package source
-        run: zip -qr ArenaControl-native-v2.7-source.zip ArenaControl
+        run: zip -qr ArenaControl-native-v2.8-source.zip ArenaControl
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ArenaControl-native-v2.7
+          name: ArenaControl-native-v2.8
           path: |
             ArenaControl/app/build/outputs/apk/debug/app-debug.apk
-            ArenaControl-native-v2.7-source.zip
+            ArenaControl-native-v2.8-source.zip
           if-no-files-found: error
