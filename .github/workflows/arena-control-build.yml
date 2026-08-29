@@ -50,6 +50,7 @@ jobs:
           python3 redesign_v222.py
           python3 redesign_v223.py
           python3 redesign_v224.py
+          python3 redesign_v225.py
 
       - name: Verify architecture and controls
         run: |
@@ -106,12 +107,12 @@ jobs:
           sha256sum ArenaControl/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Package source
-        run: zip -qr ArenaControl-native-v2.24-source.zip ArenaControl
+        run: zip -qr ArenaControl-native-v2.25-source.zip ArenaControl
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ArenaControl-native-v2.24
+          name: ArenaControl-native-v2.25
           path: |
             ArenaControl/app/build/outputs/apk/debug/app-debug.apk
-            ArenaControl-native-v2.24-source.zip
+            ArenaControl-native-v2.25-source.zip
           if-no-files-found: error
