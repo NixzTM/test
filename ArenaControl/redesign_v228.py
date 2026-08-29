@@ -14,8 +14,9 @@ while True:
 if len(starts)<2:
     raise SystemExit('expected duplicate live-chat loader after v2.27, got '+str(len(starts)))
 
-# Keep the LAST overload: redesign_v227 appends the new stable snapshot implementation.
-for i in reversed(starts[:-1]):
+# redesign_v227 replaces the no-arg loader with wrapper + NEW server-specific loader,
+# so the new snapshot implementation is the FIRST server-specific overload. Remove older later ones.
+for i in reversed(starts[1:]):
     b=s.find('{',i)
     if b<0: raise SystemExit('loader body missing')
     d=0
@@ -34,8 +35,10 @@ if s.count(sig)!=1:
     raise SystemExit('v2.28 duplicate live-chat loader cleanup failed')
 if s.count('private List<ChatLine> loadMobileChat()')!=1:
     raise SystemExit('v2.28 no-arg loader count invalid')
-if 'chatSnapshotKeysByServer' not in s or 'observedChatByServer' not in s:
-    raise SystemExit('v2.27 live-chat implementation missing')
+if 'chatSnapshotKeysByServer.get(srv)' not in s or 'chatSnapshotKeysByServer.put(srv' not in s:
+    raise SystemExit('v2.27 snapshot loader was not preserved')
+if 'observedChatByServer' not in s:
+    raise SystemExit('observed chat state missing')
 
 p.write_text(s)
-print('v2.28 duplicate live-chat loader cleanup applied')
+print('v2.28 duplicate live-chat loader cleanup applied; snapshot loader preserved')
