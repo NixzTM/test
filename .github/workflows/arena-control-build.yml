@@ -13,79 +13,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
 
-      - name: Apply native visual and TMNF rendering pass
+      - name: Verify direct architecture
         run: |
-          cat > ArenaControl/app/src/main/java/com/arenacommunity/control/TmnfText.java <<'JAVA'
-          package com.arenacommunity.control;
-          import android.graphics.Color;
-          import android.graphics.Typeface;
-          import android.text.SpannableStringBuilder;
-          import android.text.Spanned;
-          import android.text.style.ForegroundColorSpan;
-          import android.text.style.StyleSpan;
-          public final class TmnfText {
-            private TmnfText() {}
-            public static CharSequence render(String raw,int defaultColor){
-              if(raw==null)raw=""; SpannableStringBuilder out=new SpannableStringBuilder(); int color=defaultColor,start=0; boolean bold=false,italic=false;
-              for(int i=0;i<raw.length();){char ch=raw.charAt(i); if(ch!='$'){out.append(ch);i++;continue;} if(i+1>=raw.length()){out.append('$');break;} char code=raw.charAt(i+1); if(code=='$'){out.append('$');i+=2;continue;}
-                if(isHex(code)&&i+3<raw.length()&&isHex(raw.charAt(i+2))&&isHex(raw.charAt(i+3))){apply(out,start,out.length(),color,bold,italic);start=out.length();color=Color.rgb(Character.digit(raw.charAt(i+1),16)*17,Character.digit(raw.charAt(i+2),16)*17,Character.digit(raw.charAt(i+3),16)*17);i+=4;continue;}
-                char c=Character.toLowerCase(code); if(c=='z'||c=='g'){apply(out,start,out.length(),color,bold,italic);start=out.length();color=defaultColor;bold=false;italic=false;i+=2;continue;} if(c=='o'){apply(out,start,out.length(),color,bold,italic);start=out.length();bold=!bold;i+=2;continue;} if(c=='i'){apply(out,start,out.length(),color,bold,italic);start=out.length();italic=!italic;i+=2;continue;} if(c=='s'||c=='w'||c=='n'||c=='m'||c=='h'||c=='p'||c=='l'){i+=2;continue;} out.append('$');i++;}
-              apply(out,start,out.length(),color,bold,italic); return out;
-            }
-            public static String plain(String raw){return render(raw,Color.WHITE).toString();}
-            private static void apply(SpannableStringBuilder b,int s,int e,int color,boolean bold,boolean italic){if(e<=s)return;b.setSpan(new ForegroundColorSpan(color),s,e,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);int style=bold&&italic?Typeface.BOLD_ITALIC:bold?Typeface.BOLD:italic?Typeface.ITALIC:Typeface.NORMAL;if(style!=Typeface.NORMAL)b.setSpan(new StyleSpan(style),s,e,Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);}
-            private static boolean isHex(char c){return Character.digit(c,16)>=0;}
-          }
-          JAVA
-
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java')
-          s=p.read_text()
-          s=s.replace('import android.graphics.Color;','import android.graphics.Color;\nimport android.graphics.drawable.GradientDrawable;\nimport android.text.SpannableStringBuilder;')
-          s=s.replace('root.setBackgroundColor(Color.rgb(11,15,22));','root.setBackgroundColor(Color.rgb(8,12,19));')
-          s=s.replace('head.setBackgroundColor(Color.rgb(17,23,34));','head.setBackgroundColor(Color.rgb(12,18,28));')
-          s=s.replace('title=t("ARENA CONTROL",21,Color.WHITE,true);','title=t("ΛRENA CONTROL",21,Color.WHITE,true);')
-          s=s.replace('nav.setBackgroundColor(Color.rgb(17,23,34));','nav.setBackgroundColor(Color.rgb(12,18,28));')
-          s=s.replace('title.setText("ARENA · SERVERS")','title.setText("ΛRENA · SERVERS")')
-          s=s.replace('TextView h=t("Servers",26,Color.WHITE,true); h.setPadding(0,0,0,dp(10)); body.addView(h);','TextView h=t("Server control",28,Color.WHITE,true); h.setPadding(0,0,0,dp(4)); body.addView(h); TextView intro=t("AC3 · AC4 · AC7",13,Color.rgb(112,132,158),true); intro.setPadding(0,0,0,dp(10)); body.addView(intro);')
-          s=s.replace('TextView n=t(s,24,Color.WHITE,true); TextView desc=t(s.equals("AC3")?"Lucky Jump ARENA":s.equals("AC4")?"HUNT":"HUNT #2",14,Color.rgb(145,163,188),false); card.addView(n);card.addView(desc);','TextView n=t(s,24,Color.WHITE,true); TextView desc=t("",14,Color.rgb(145,163,188),false); String rawName=s.equals("AC3")?"$o$000Lucky Jump $6FFΛЯΞNΛ":s.equals("AC4")?"$o$000Lucky Jump $6FFHUNT":"$o$000Lucky Jump $6FFHUNT #2"; desc.setText(TmnfText.render(rawName,Color.rgb(145,163,188))); card.addView(n);card.addView(desc); TextView live=t("●  READY",11,Color.rgb(89,220,158),true); live.setPadding(0,dp(8),0,0); card.addView(live);')
-          s=s.replace('!p.nick.toLowerCase().contains(f)','!TmnfText.plain(p.nick).toLowerCase().contains(f)')
-          s=s.replace('Button row=secondary(p.nick+(p.login.equals(p.nick)?"":"\\n"+p.login));row.setGravity(Gravity.START|Gravity.CENTER_VERTICAL);row.setOnClickListener(v->showPlayerActions(p));list.addView(row,lpTop(6));','LinearLayout row=playerRow(p);row.setOnClickListener(v->showPlayerActions(p));list.addView(row,lpTop(7));')
-          s=s.replace('setTitle(p.nick+"\\n"+p.login)','setTitle(new SpannableStringBuilder().append(TmnfText.render(p.nick,Color.WHITE)).append("\\n").append(p.login))')
-          a=s.index('  TextView t(String s,int size,int c,boolean bold)')
-          b=s.index('  static class Player',a)
-          helpers='''  TextView t(String s,int size,int c,boolean bold){TextView v=new TextView(this);v.setText(s);v.setTextSize(size);v.setTextColor(c);if(bold)v.setTypeface(null,android.graphics.Typeface.BOLD);return v;}\n  EditText input(String hint,boolean password){EditText e=new EditText(this);e.setHint(hint);e.setHintTextColor(Color.rgb(92,108,132));e.setTextColor(Color.WHITE);e.setTextSize(16);e.setSingleLine(!hint.equals("Message"));e.setBackground(round(Color.rgb(14,21,32),1,Color.rgb(35,49,68),14));e.setPadding(dp(15),dp(12),dp(15),dp(12));if(password)e.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);return e;}\n  Button primary(String s){Button b=new Button(this);b.setText(s);b.setTextColor(Color.rgb(4,22,28));b.setTextSize(14);b.setAllCaps(false);b.setTypeface(null,android.graphics.Typeface.BOLD);b.setBackground(round(Color.rgb(79,218,235),0,0,14));b.setPadding(dp(14),0,dp(14),0);return b;}\n  Button secondary(String s){Button b=new Button(this);b.setText(s);b.setTextColor(Color.rgb(225,233,244));b.setTextSize(14);b.setAllCaps(false);b.setBackground(round(Color.rgb(19,29,44),1,Color.rgb(37,52,73),13));b.setPadding(dp(14),0,dp(14),0);return b;}\n  Button chip(String s){Button b=secondary(s);b.setTextSize(13);return b;}\n  LinearLayout card(){LinearLayout c=new LinearLayout(this);c.setOrientation(LinearLayout.VERTICAL);c.setPadding(dp(17),dp(16),dp(17),dp(16));c.setBackground(round(Color.rgb(14,22,34),1,Color.rgb(31,45,64),18));return c;}\n  LinearLayout playerRow(Player p){LinearLayout r=new LinearLayout(this);r.setOrientation(LinearLayout.VERTICAL);r.setPadding(dp(15),dp(12),dp(15),dp(12));r.setBackground(round(Color.rgb(14,22,34),1,Color.rgb(31,45,64),14));TextView n=t("",17,Color.WHITE,true);n.setText(TmnfText.render(p.nick,Color.WHITE));r.addView(n);if(!p.login.equals(TmnfText.plain(p.nick))){TextView l=t(p.login,12,Color.rgb(111,134,163),false);l.setPadding(0,dp(3),0,0);r.addView(l);}return r;}\n  GradientDrawable round(int fill,int strokeW,int stroke,int radius){GradientDrawable g=new GradientDrawable();g.setColor(fill);g.setCornerRadius(dp(radius));if(strokeW>0)g.setStroke(dp(strokeW),stroke);return g;}\n  LinearLayout.LayoutParams lp(){return new LinearLayout.LayoutParams(-1,dp(56));}\n  LinearLayout.LayoutParams lpTop(int n){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-1,-2);p.topMargin=dp(n);return p;}\n  void addNav(String s,Runnable r){Button b=secondary(s);b.setTextSize(11);b.setTextColor(Color.rgb(175,190,211));b.setBackgroundColor(Color.TRANSPARENT);b.setOnClickListener(v->r.run());nav.addView(b,new LinearLayout.LayoutParams(0,-1,1));}\n'''
-          s=s[:a]+helpers+s[b:]
-          p.write_text(s)
-
-          g=Path('ArenaControl/app/build.gradle.kts')
-          x=g.read_text().replace('versionCode = 1','versionCode = 2').replace('versionName = "1.0.0"','versionName = "1.1.0"')
-          g.write_text(x)
-          PY
+          test -f ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          test -f ArenaControl/app/src/main/java/com/arenacommunity/control/TmnfText.java
+          test -f ArenaControl/app/src/main/res/raw/remote_admin.py
+          test -f ArenaControl/app/src/main/res/raw/arena_logo_b64.txt
+          ! grep -R "WebView\|CookieManager\|arena-community.com" ArenaControl/app/src/main/java ArenaControl/app/src/main/res/raw
+          grep -q "com.github.mwiede:jsch" ArenaControl/app/build.gradle.kts
+          grep -q "Game VPS login" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "AC3" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "AC4" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "AC7" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
 
       - name: Build debug APK
         working-directory: ArenaControl
         run: gradle --no-daemon clean assembleDebug
+
       - name: Verify APK
         run: |
           test -f ArenaControl/app/build/outputs/apk/debug/app-debug.apk
           sha256sum ArenaControl/app/build/outputs/apk/debug/app-debug.apk
-          grep -q 'class TmnfText' ArenaControl/app/src/main/java/com/arenacommunity/control/TmnfText.java
+
       - name: Package source
-        run: zip -qr ArenaControl-native-v1.1-source.zip ArenaControl
+        run: zip -qr ArenaControl-native-v2.0-source.zip ArenaControl
+
       - uses: actions/upload-artifact@v4
         with:
-          name: ArenaControl-native-v1.1
+          name: ArenaControl-native-v2.0
           path: |
             ArenaControl/app/build/outputs/apk/debug/app-debug.apk
-            ArenaControl-native-v1.1-source.zip
+            ArenaControl-native-v2.0-source.zip
           if-no-files-found: error
