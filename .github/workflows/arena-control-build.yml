@@ -23,15 +23,16 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
-      - name: Verify direct architecture
+      - name: Verify website-auth architecture
         run: |
           test -f ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           test -f ArenaControl/app/src/main/java/com/arenacommunity/control/TmnfText.java
-          test -f ArenaControl/app/src/main/res/raw/remote_admin.py
           test -f ArenaControl/app/src/main/res/raw/arena_logo_b64.txt
-          ! grep -R "WebView\|CookieManager\|arena-community.com" ArenaControl/app/src/main/java ArenaControl/app/src/main/res/raw
-          grep -q "com.github.mwiede:jsch" ArenaControl/app/build.gradle.kts
-          grep -q "Game VPS login" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          ! grep -R "WebView\|com.jcraft.jsch\|Game VPS login\|SSH password\|private key" ArenaControl/app/src/main/java
+          grep -q "arena-community.com" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "owner/admin" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "player.ban" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "player.unban" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "AC3" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "AC4" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "AC7" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
@@ -46,12 +47,12 @@ jobs:
           sha256sum ArenaControl/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Package source
-        run: zip -qr ArenaControl-native-v2.0-source.zip ArenaControl
+        run: zip -qr ArenaControl-native-v2.1-source.zip ArenaControl
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ArenaControl-native-v2.0
+          name: ArenaControl-native-v2.1
           path: |
             ArenaControl/app/build/outputs/apk/debug/app-debug.apk
-            ArenaControl-native-v2.0-source.zip
+            ArenaControl-native-v2.1-source.zip
           if-no-files-found: error
