@@ -36,6 +36,13 @@ jobs:
           grep -q "AC3" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "AC4" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "AC7" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java')
+          s=p.read_text()
+          s=s.replace('new String(readRaw(R.raw.arena_logo_b64),StandardCharsets.UTF_8).trim()', 'readRaw(R.raw.arena_logo_b64).trim()')
+          p.write_text(s)
+          PY
 
       - name: Build debug APK
         working-directory: ArenaControl
