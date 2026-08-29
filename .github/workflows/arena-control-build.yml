@@ -51,6 +51,7 @@ jobs:
           python3 redesign_v223.py
           python3 redesign_v224.py
           python3 redesign_v225.py
+          python3 redesign_v226.py
 
       - name: Verify architecture and controls
         run: |
@@ -78,6 +79,7 @@ jobs:
           grep -q "observedChatByServer" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "loadServer=server" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           grep -q "pollServer=server" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
+          grep -q "setOnApplyWindowInsetsListener" ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
           test "$(grep -c 'private List<ChatLine> loadMobileChat(String srv)' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java)" -eq 1
           test "$(grep -c 'private List<ChatLine> loadMobileChat()' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java)" -eq 1
           grep -q '/v1/chat?limit=120' ArenaControl/app/src/main/java/com/arenacommunity/control/MainActivity.java
@@ -107,12 +109,12 @@ jobs:
           sha256sum ArenaControl/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Package source
-        run: zip -qr ArenaControl-native-v2.25-source.zip ArenaControl
+        run: zip -qr ArenaControl-native-v2.26-source.zip ArenaControl
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ArenaControl-native-v2.25
+          name: ArenaControl-native-v2.26
           path: |
             ArenaControl/app/build/outputs/apk/debug/app-debug.apk
-            ArenaControl-native-v2.25-source.zip
+            ArenaControl-native-v2.26-source.zip
           if-no-files-found: error
