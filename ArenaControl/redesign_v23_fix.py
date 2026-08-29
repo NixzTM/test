@@ -7,5 +7,6 @@ s=s.replace('"Chat unavailable\n"+pc.chatError','"Chat unavailable\\n"+pc.chatEr
 s=s.replace('.append("\n").append(TmnfText.render(m.message,Color.WHITE))','.append("\\n").append(TmnfText.render(m.message,Color.WHITE))')
 s=s.replace('x.status+"]\n"+x.actor','x.status+"]\\n"+x.actor')
 s=s.replace('x.result.isEmpty()?"":"\n↳ "+x.result','x.result.isEmpty()?"":"\\n↳ "+x.result')
+s=s.replace('n.setText(p.richNick);','n.setText(p.plainNick);')
 p.write_text(s)
-print('v2.3 string escapes repaired')
+print('v2.3 generated Java repaired')
